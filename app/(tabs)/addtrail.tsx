@@ -3,36 +3,6 @@ import { StyleSheet, View } from 'react-native';
 import MapView, { Marker, UrlTile } from 'react-native-maps';
 import * as Location from 'expo-location';
 import {MaterialIcons} from '@expo/vector-icons';
-
-const RecenterButton = ({ location, setRegion }: { location: { latitude: number; longitude: number } | null, setRegion: (region: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number }) => void }) => {
-  const [isClicked, setIsClicked] = useState(false);
-
-  const recenterMap = () => {
-    if (location) {
-      setRegion({
-        latitude: location.latitude,
-        longitude: location.longitude,
-        latitudeDelta: 0.005,
-        longitudeDelta: 0.005,
-      });
-    }
-    setIsClicked(true);
-    setTimeout(() => setIsClicked(false), 300);
-  };
-
-  return (
-    <TouchableOpacity
-      style={[
-        styles.recenterButton,
-        isClicked && styles.clicked,
-      ]}
-      onPress={recenterMap}
-    >
-      <MaterialIcons name="gps-fixed" size={24} color="white" />
-    </TouchableOpacity>
-  );
-};
-// Importa il componente RecenterButton
 import RecenterButton from '../../components/recenterBotton';
 import SearchBar from '@/components/Searchbar';
 
