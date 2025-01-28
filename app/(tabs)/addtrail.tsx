@@ -3,7 +3,6 @@ import { StyleSheet, View, TouchableOpacity, Text } from 'react-native';
 import MapView, { Marker, UrlTile } from 'react-native-maps';
 import * as Location from 'expo-location';
 import {MaterialIcons} from '@expo/vector-icons';
-import SearchBar from '@/components/Searchbar';
 
 const RecenterButton = ({ location, setRegion }: { location: { latitude: number; longitude: number } | null, setRegion: (region: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number }) => void }) => {
   const [isClicked, setIsClicked] = useState(false);
