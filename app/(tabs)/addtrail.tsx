@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import MapView, { Marker, UrlTile } from 'react-native-maps';
 import * as Location from 'expo-location';
 import {MaterialIcons} from '@expo/vector-icons';
-import RecenterButton from '../../components/recenterBotton';
+import RecenterButton from '@/components/recenterBotton';
 import SearchBar from '@/components/Searchbar';
 
 const AddTrail = () => {

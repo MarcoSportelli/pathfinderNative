@@ -13,7 +13,7 @@ import * as Location from 'expo-location';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import SearchBar from '@/components/Searchbar';
 import BottomSheet from '@gorhom/bottom-sheet';
-import RecenterButton from '../../components/recenterBotton';
+import RecenterButton from '@/components/recenterBotton';
 
 const MapWithTopoMap = () => {
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -28,9 +28,6 @@ const MapWithTopoMap = () => {
   const [trailActive, setTrailActive] = useState(false);
   const [slideAnim] = useState(new Animated.Value(-150)); // Posizione iniziale del popup
   
-  const bottomSheetRef = useRef<BottomSheet>(null); // Ref per la Bottom Sheet
-  const screenHeight = Dimensions.get('window').height;
-
   const mapRef = React.useRef<MapView>(null);
 
   // Ottieni la posizione dell'utente
@@ -101,7 +98,8 @@ const MapWithTopoMap = () => {
   };
 
   const closeModal = () => {
-    setSelectedTrail(null);
+    closeTrailPopup();
+    endTrail();
   };
 
 
@@ -133,22 +131,12 @@ const MapWithTopoMap = () => {
         )}
   
         {/* Marker per ogni trail */}
-        {trails.map((trail) => (
-          <Marker
-            key={trail.id}
-            coordinate={trail.startpoint}
-            onPress={() => handleMarkerPress(trail)}
-          />
-        ))}
+        {trails.map((trail) => ( <Marker key={trail.id} coordinate={trail.startpoint} onPress={() => handleMarkerPress(trail)} /> ))}
   
         {/* Polyline per il trail selezionato o attivo */}
-        {trailActive && selectedTrail && (
-          <Polyline coordinates={selectedTrail.path} strokeColor="blue" strokeWidth={4} />
-        )}
+        {selectedTrail && ( <Polyline coordinates={selectedTrail.path} strokeColor="blue" strokeWidth={4} />)}
+
       </MapView>
-  
-      {/* Bottone per recentrare la mappa */}
-      <RecenterButton location={location} setRegion={setRegion} />
   
       {/* Bottone per terminare il trail */}
       {trailActive && (
@@ -158,30 +146,43 @@ const MapWithTopoMap = () => {
       )}
   
       {/* Bottom sheet modal */}
-      {selectedTrail && (
-        <Modal
-          transparent={true}
-          animationType="slide"
-          visible={!!selectedTrail}
-          onRequestClose={closeModal}
-          presentationStyle='overFullScreen'
-        >
+      {selectedTrail && ( <Popup selectedTrail={selectedTrail} startTrail={startTrail} closeModal={closeModal} /> )}
+
+      {/* Bottone per recentrare la mappa */}
+      <RecenterButton location={location} setRegion={setRegion} />
+    </View>
+  );
+  
+};
+interface PopupProps {
+  selectedTrail: {
+    id: number;
+    name: string;
+    startpoint: { latitude: number; longitude: number };
+    endpoint: { latitude: number; longitude: number };
+    path: Array<{ latitude: number; longitude: number }>;
+  } | null;
+  startTrail: () => void;
+  closeModal: () => void;
+}
+
+const Popup: React.FC<PopupProps> = ({ selectedTrail, startTrail, closeModal }) => {
+  return(
+    <Modal transparent={true} animationType="fade" visible={!!selectedTrail} onRequestClose={closeModal} presentationStyle='overFullScreen'>
           <View style={styles.modalContainer}>
             <View style={styles.bottomSheet}>
-              <Text style={styles.trailName}>{selectedTrail.name}</Text>
+              <Text style={styles.trailName}>{selectedTrail?.name}</Text>
               <Text>Vuoi iniziare questo trail?</Text>
+              <TouchableOpacity style={styles.button} onPress={startTrail}>
+                <Text style={styles.buttonText}>Start</Text>
+              </TouchableOpacity>
               <TouchableOpacity style={styles.button} onPress={closeModal}>
                 <Text style={styles.buttonText}>Chiudi</Text>
               </TouchableOpacity>
             </View>
           </View>
         </Modal>
-      )}
-      {/* Bottone per recentrare la mappa */}
-      <RecenterButton location={location} setRegion={setRegion} />
-    </View>
   );
-  
 };
 
 const styles = StyleSheet.create({
