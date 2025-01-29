@@ -43,13 +43,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="tree"
-        options={{
-          title: 'tree',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="tree.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="profile"
         options={{
           title: 'profile',

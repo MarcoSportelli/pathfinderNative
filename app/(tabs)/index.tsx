@@ -10,10 +10,12 @@ import {
 } from 'react-native';
 import MapView, { Marker, UrlTile, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import SearchBar from '@/components/Searchbar';
-import BottomSheet from '@gorhom/bottom-sheet';
 import RecenterButton from '@/components/recenterBotton';
+
+import Tree from '@/components/Tree';
+import Tutorial from '@/components/Tutorial'; 
 
 const MapWithTopoMap = () => {
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -27,7 +29,7 @@ const MapWithTopoMap = () => {
   } | null>(null);
   const [trailActive, setTrailActive] = useState(false);
   const [slideAnim] = useState(new Animated.Value(-150)); // Posizione iniziale del popup
-  
+
   const mapRef = React.useRef<MapView>(null);
 
   // Ottieni la posizione dell'utente
@@ -73,7 +75,6 @@ const MapWithTopoMap = () => {
       ],
     },
   ];
-  
 
   const handleMarkerPress = (trail: typeof trails[0]) => {
     setSelectedTrail(trail);
@@ -102,7 +103,6 @@ const MapWithTopoMap = () => {
     endTrail();
   };
 
-
   if (!region) {
     return <View style={styles.container} />;
   }
@@ -110,6 +110,7 @@ const MapWithTopoMap = () => {
   return (
     <View style={styles.container}>
       <MapView
+        showsCompass={false}
         ref={mapRef}
         style={styles.map}
         region={region}
@@ -118,9 +119,9 @@ const MapWithTopoMap = () => {
       >
         {/* Overlay per mappe topografiche */}
         <UrlTile urlTemplate="http://c.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-  
+
         <SearchBar mapRef={mapRef} />
-  
+
         {/* Marker per la posizione corrente */}
         {location && (
           <Marker coordinate={location}>
@@ -129,30 +130,45 @@ const MapWithTopoMap = () => {
             </View>
           </Marker>
         )}
-  
-        {/* Marker per ogni trail */}
-        {trails.map((trail) => ( <Marker key={trail.id} coordinate={trail.startpoint} onPress={() => handleMarkerPress(trail)} /> ))}
-  
-        {/* Polyline per il trail selezionato o attivo */}
-        {selectedTrail && ( <Polyline coordinates={selectedTrail.path} strokeColor="blue" strokeWidth={4} />)}
 
+        {/* Marker per ogni trail */}
+        {trails.map((trail) => (
+          <Marker key={trail.id} coordinate={trail.startpoint} onPress={() => handleMarkerPress(trail)} />
+        ))}
+
+        {/* Polyline per il trail selezionato o attivo */}
+        {selectedTrail && (
+          <Polyline coordinates={selectedTrail.path} strokeColor="blue" strokeWidth={4} />
+        )}
       </MapView>
-  
+
       {/* Bottone per terminare il trail */}
       {trailActive && (
         <TouchableOpacity style={styles.endTrailButton} onPress={endTrail}>
           <Ionicons name="stop" size={24} color="white" />
         </TouchableOpacity>
       )}
-  
-      {/* Bottom sheet modal */}
-      {selectedTrail && ( <Popup selectedTrail={selectedTrail} startTrail={startTrail} closeModal={closeModal} /> )}
 
-      {/* Bottone per recentrare la mappa */}
-      <RecenterButton location={location} setRegion={setRegion} />
+      {/* Bottom sheet modal */}
+      {selectedTrail && (
+        <Popup selectedTrail={selectedTrail} startTrail={startTrail} closeModal={closeModal} />
+      )}
+
+      {!selectedTrail &&
+      <View style={styles.buttonGroup}>
+        {/* Tree a sinistra */}
+        <View style={styles.leftButtonContainer}>
+          <Tree/>
+        </View>
+
+        {/* RecenterButton e Tutorial a destra */}
+        <View style={styles.rightButtonContainer}>
+          <RecenterButton location={location} setRegion={setRegion} />
+          <Tutorial />
+        </View>
+      </View>/* Pulsanti personalizzati */}
     </View>
   );
-  
 };
 interface PopupProps {
   selectedTrail: {
@@ -168,20 +184,18 @@ interface PopupProps {
 
 const Popup: React.FC<PopupProps> = ({ selectedTrail, startTrail, closeModal }) => {
   return(
-    <Modal transparent={true} animationType="fade" visible={!!selectedTrail} onRequestClose={closeModal} presentationStyle='overFullScreen'>
-          <View style={styles.modalContainer}>
-            <View style={styles.bottomSheet}>
-              <Text style={styles.trailName}>{selectedTrail?.name}</Text>
-              <Text>Vuoi iniziare questo trail?</Text>
-              <TouchableOpacity style={styles.button} onPress={startTrail}>
-                <Text style={styles.buttonText}>Start</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.button} onPress={closeModal}>
-                <Text style={styles.buttonText}>Chiudi</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
+    <View style={styles.popupContainer}>
+      <View style={styles.popup}>
+        <Text style={styles.trailName}>{selectedTrail?.name}</Text>
+        <Text>Vuoi iniziare questo trail?</Text>
+        <TouchableOpacity style={styles.button} onPress={startTrail}>
+          <Text style={styles.buttonText}>Start</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={closeModal}>
+          <Text style={styles.buttonText}>Chiudi</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 };
 
@@ -202,20 +216,29 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: 'white',
   },
-  trailPopup: {
+  popupContainer: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 100,
     left: 0,
     right: 0,
-    height: 150,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2, 
+  },
+  popup: {
+    width: '90%',
     backgroundColor: 'white',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderRadius: 15,
+    padding: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
     elevation: 5,
+  },
+  cancelButton: {
+    backgroundColor: '#FF3B30', // Rosso per il pulsante Chiudi
+    marginTop: 10,
   },
   modalContainer: {
     flex: 1,
@@ -240,11 +263,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 10,
   },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 20,
-  },
+
   button: {
     padding: 10,
     backgroundColor: '#007BFF',
@@ -253,9 +272,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
     alignItems: 'center',
   },
-  cancelButton: {
-    backgroundColor: '#FF6F61',
-  },
+ 
   buttonText: {
     color: 'white',
     fontWeight: 'bold',
@@ -268,21 +285,22 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     padding: 10,
   },
-  recenterButton: {
+  buttonGroup: {
     position: 'absolute',
-    bottom: 100,
-    right: 20,
-    backgroundColor: '#3498db',
-    borderRadius: 25,
-    width: 50,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
+    bottom: 20,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
   },
-  clicked: {
-    backgroundColor: '#1f78b4',
+  leftButtonContainer: {
+    alignItems: 'flex-start',
+  },
+  rightButtonContainer: {
+    alignItems: 'flex-end',
   },
 });
+
 
 export default MapWithTopoMap;
