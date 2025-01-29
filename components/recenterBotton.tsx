@@ -36,7 +36,7 @@ const RecenterButton: React.FC<RecenterButtonProps> = ({ location, setRegion }) 
 const styles = StyleSheet.create({
   recenterButton: {
     position: 'absolute',
-    bottom: 200,
+    bottom: 180,
     backgroundColor: '#34495e',
     borderRadius: 50,
     width: 60,
