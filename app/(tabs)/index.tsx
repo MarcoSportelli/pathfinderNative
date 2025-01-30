@@ -175,8 +175,6 @@ const MapWithTopoMap = () => {
         {/* Overlay per mappe topografiche */}
         <UrlTile urlTemplate="http://c.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-        <SearchBar mapRef={mapRef} />
-
         {/* Marker per la posizione corrente */}
         {!simulatedPosition && location && (
           <Marker coordinate={location}>
@@ -207,6 +205,7 @@ const MapWithTopoMap = () => {
 
       </MapView>
 
+      <SearchBar mapRef={mapRef} />
       {/* Bottone per terminare il trail */}
       {trailActive && (
         <TouchableOpacity style={styles.endTrailButton} onPress={endTrail}>

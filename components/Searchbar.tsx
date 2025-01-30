@@ -48,7 +48,7 @@ const SearchBar = ({ mapRef }: { mapRef: React.RefObject<any> }) => {
           }
   
           const data = await response.json();
-          console.log('API response:', data);
+          console.log('%c API Response:', 'color: cyan; font-weight: bold;', data);
   
           if (Array.isArray(data) && data.length > 0) {
             const formattedData = data.map((item) => ({
@@ -58,14 +58,15 @@ const SearchBar = ({ mapRef }: { mapRef: React.RefObject<any> }) => {
                 longitude: parseFloat(item.lon),
               },
             }));
-            console.log('Processed suggestions:', formattedData);
+  
+            console.log('%c Processed Suggestions:', 'color: green; font-weight: bold;', formattedData);
             setSuggestions(formattedData);
           } else {
-            console.warn('No results found.');
+            console.warn('%c No results found.', 'color: orange; font-weight: bold;');
             setSuggestions([]);
           }
         } catch (error) {
-          console.error('Error fetching suggestions:', error);
+          console.error('%c Error fetching suggestions:', 'color: red; font-weight: bold;', error);
           setSuggestions([]);
         }
       } else {
@@ -73,9 +74,6 @@ const SearchBar = ({ mapRef }: { mapRef: React.RefObject<any> }) => {
       }
     }, 300);
   };
-  
-
-  
   
 
   const handleSearch = async (searchTerm: string) => {
@@ -144,6 +142,7 @@ const SearchBar = ({ mapRef }: { mapRef: React.RefObject<any> }) => {
       </View>
 
       {showDropdown && suggestions.length > 0 && (
+      <View style={styles.suggestionsContainer}>
         <FlatList
           data={suggestions || []}
           keyExtractor={(item, index) => index.toString()}
@@ -160,7 +159,9 @@ const SearchBar = ({ mapRef }: { mapRef: React.RefObject<any> }) => {
             </Text>
           )}
         />
-      )}
+      </View>
+)}
+
 
 
 
@@ -232,6 +233,21 @@ const styles = StyleSheet.create({
     borderBottomColor: '#ecf0f1',
     color: '#34495e',
   },
+  suggestionsContainer: {
+    position: 'absolute',
+    top: 60, 
+    left: 0,
+    right: 0,
+    backgroundColor: 'white', 
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5, 
+    zIndex: 1000, 
+  },  
 });
 
 export default SearchBar;
