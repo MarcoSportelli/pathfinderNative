@@ -9,6 +9,33 @@ import RecenterButton from '@/components/recenterBotton';
 import Tree from '@/components/Tree';
 import Tutorial from '@/components/Tutorial'; 
 
+import * as TrailDAO from '@/dao/trailDAO';
+
+interface Trail {
+  id: number;
+  name: string;
+  downhill: number;
+  difficulty: string;
+  length: number;
+  duration: number;
+  elevation : number;
+  
+  startpoint: [number, number];
+  trail: [[number, number]];
+  endpoint: [number, number];
+
+  description: string;
+  image: string;
+
+  city: string;
+  region: string;
+  state: string;
+  province: string;
+
+  activity: string;
+
+}
+
 const MapWithTopoMap = () => {
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [region, setRegion] = useState<{ latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number } | null>(null);
@@ -20,6 +47,7 @@ const MapWithTopoMap = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
   const [reviewText, setReviewText] = useState("");
+  const [trails, setTrails] = useState<Trail[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -41,52 +69,38 @@ const MapWithTopoMap = () => {
     })();
   }, [refresch]);
 
-  const trails = [
-    {
-      id: 1,
-      name: 'Trail 1',
-      startpoint: { latitude: 45.064, longitude: 7.692 },
-      endpoint: { latitude: 45.070, longitude: 7.698 },
-      path: [
-        { latitude: 45.064, longitude: 7.692 },
-        { latitude: 45.065, longitude: 7.693 },
-        { latitude: 45.066, longitude: 7.694 },
-        { latitude: 45.067, longitude: 7.695 },
-        { latitude: 45.068, longitude: 7.696 },
-        { latitude: 45.069, longitude: 7.697 },
-        { latitude: 45.070, longitude: 7.698 },
-      ],
-    },
-    {
-      id: 2,
-      name: 'Trail 2',
-      startpoint: { latitude: 45.063, longitude: 7.690 },
-      endpoint: { latitude: 45.062, longitude: 7.680 },
-      path: [
-        { latitude: 45.063, longitude: 7.690 },
-        { latitude: 45.063, longitude: 7.689 },
-        { latitude: 45.063, longitude: 7.688 },
-        { latitude: 45.063, longitude: 7.687 },
-        { latitude: 45.063, longitude: 7.686 },
-        { latitude: 45.063, longitude: 7.685 },
-        { latitude: 45.063, longitude: 7.684 },
-        { latitude: 45.063, longitude: 7.683 },
-        { latitude: 45.062, longitude: 7.682 },
-        { latitude: 45.062, longitude: 7.681 },
-        { latitude: 45.062, longitude: 7.680 },
-      ],
-    },
-  ];
 
-  const handleMarkerPress = (trail: React.SetStateAction<{ id: number; name: string; startpoint: { latitude: number; longitude: number; }; endpoint: { latitude: number; longitude: number; }; path: Array<{ latitude: number; longitude: number; }>; } | null>) => {
-    setSelectedTrail(trail);
-    setModalVisible(true);
+  useEffect(() => {
+  const fetchTrails = async () => {
+    try {
+      const trails = await TrailDAO.getTrails();
+      setTrails(trails);
+    } catch (error) {
+      console.error("Errore durante il recupero dei trails:", error);
+    }
+  };
+
+  fetchTrails();
+}, [refresch]);
+
+
+  const handleMarkerPress = (id: number) => {
+    const fetchTrail = async () => {
+      try {
+        const trail = await TrailDAO.getTrail(id);
+        setSelectedTrail(trail);
+        setModalVisible(true);
+      } catch (error) {
+        console.error("Errore durante il recupero del trail:", error);
+      }
+    }
+    fetchTrail();
   };
 
   const startTrail = () => {
     console.log('Starting trail:', selectedTrail?.name);
     setTrailActive(true);
-    setSimulatedPosition(selectedTrail?.path[0] || null);
+    setSimulatedPosition(selectedTrail?.trail[0] || null);
     setModalVisible(false);
   };
 
@@ -107,7 +121,7 @@ const MapWithTopoMap = () => {
     let timerId: string | number | NodeJS.Timeout | null | undefined = null;
   
     if (trailActive && selectedTrail) {
-      const path = selectedTrail.path;
+      const path = selectedTrail.trail;
       let index = 0;
   
       const speedMetersPerSecond = 10 * 1000 / 3600; // 4 km/h in metri al secondo
@@ -186,7 +200,7 @@ const MapWithTopoMap = () => {
 
         {/* Marker per ogni trail */}
         {trails.map((trail) => ( 
-          <Marker key={trail.id} coordinate={trail.startpoint} flat={true}  onPress={() => handleMarkerPress(trail)} >
+          <Marker key={trail.id} coordinate={trail.startpoint} flat={true}  onPress={() => handleMarkerPress(trail.id)} >
             <View style={styles.markerBike}>
               <MaterialCommunityIcons name="bike" size={24} color="white" />
             </View>
@@ -194,7 +208,7 @@ const MapWithTopoMap = () => {
         ))}
 
         {/* Polyline per il trail selezionato o attivo */}
-        {selectedTrail && <Polyline coordinates={selectedTrail.path} strokeColor="blue" strokeWidth={4} />}
+        {selectedTrail && <Polyline coordinates={selectedTrail.trail} strokeColor="blue" strokeWidth={4} />}
         {simulatedPosition && 
         <Marker coordinate={simulatedPosition}>
           <View style={styles.marker}>
