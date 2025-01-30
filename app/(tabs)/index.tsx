@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, act } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Pressable} from 'react-native';
 import MapView, { Marker, UrlTile, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -10,6 +10,7 @@ import Tree from '@/components/Tree';
 import Tutorial from '@/components/Tutorial'; 
 
 import * as TrailDAO from '@/dao/trailDAO';
+import TrailDropdown from '@/components/TrailDropdown';
 
 interface Trail {
   id: number;
@@ -39,7 +40,7 @@ interface Trail {
 const MapWithTopoMap = () => {
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [region, setRegion] = useState<{ latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number } | null>(null);
-  const [selectedTrail, setSelectedTrail] = useState<{ id: number; name: string; startpoint: { latitude: number; longitude: number; }; endpoint: { latitude: number; longitude: number; }; path: { latitude: number; longitude: number; }[]; } | null>(null);
+  const [selectedTrail, setSelectedTrail] = useState<Trail | null>(null);
   const [trailActive, setTrailActive] = useState(false);
   const [simulatedPosition, setSimulatedPosition] = useState<{ latitude: number; longitude: number } | null>(null);
   const mapRef = useRef<MapView>(null);
@@ -48,6 +49,9 @@ const MapWithTopoMap = () => {
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
   const [reviewText, setReviewText] = useState("");
   const [trails, setTrails] = useState<Trail[]>([]);
+  
+  const [trailOptionsVisible, setTrailOptionsVisible] = useState<Trail[]>([]);
+  const [visibileOptions, setVisibleOptions] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -69,44 +73,59 @@ const MapWithTopoMap = () => {
     })();
   }, [refresch]);
 
-
   useEffect(() => {
-  const fetchTrails = async () => {
+    const fetchTrails = async () => {
+      try {
+        const trails = await TrailDAO.getTrails();
+        setTrails(trails);
+      } catch (error) {
+        console.error("Errore durante il recupero dei trails:", error);
+      }
+    };
+
+    fetchTrails();
+  }, [refresch]);
+
+  const fetchTrail = async (t: Trail) => {
     try {
-      const trails = await TrailDAO.getTrails();
-      setTrails(trails);
+      const trail = await TrailDAO.getTrail(t.id);
+      setSelectedTrail(trail);
+      setModalVisible(true);
     } catch (error) {
-      console.error("Errore durante il recupero dei trails:", error);
+      console.error("Errore durante il recupero del trail:", error);
     }
   };
 
-  fetchTrails();
-}, [refresch]);
-
-
-  const handleMarkerPress = (id: number) => {
-    const fetchTrail = async () => {
-      try {
-        const trail = await TrailDAO.getTrail(id);
-        setSelectedTrail(trail);
-        setModalVisible(true);
-      } catch (error) {
-        console.error("Errore durante il recupero del trail:", error);
-      }
+  const handleMarkerPress = (t: Trail) => {
+    
+    const overlappingTrails = trails.filter(
+      (trail) => trail.startpoint.latitude === t.startpoint.latitude &&
+                 trail.startpoint.longitude === t.startpoint.longitude
+    );
+  
+    if (overlappingTrails.length > 1) {
+      showTrailOptions(overlappingTrails);
+    } else {
+      fetchTrail(t);
     }
-    fetchTrail();
+  };
+  
+  const showTrailOptions = (overlappingTrails: Trail[]) => {
+    setVisibleOptions(true);
+    setTrailOptionsVisible(overlappingTrails);
   };
 
   const startTrail = () => {
     console.log('Starting trail:', selectedTrail?.name);
     setTrailActive(true);
-    setSimulatedPosition(selectedTrail?.trail[0] || null);
+    setSimulatedPosition(selectedTrail ? { latitude: selectedTrail.trail[0][0], longitude: selectedTrail.trail[0][1] } : null);
     setModalVisible(false);
   };
 
   const endTrail = () => {
     setReviewModalVisible(true);
   };
+
   const submitReview = () => {
     console.log("Recensione inviata:", reviewText);
     setReviewModalVisible(false);
@@ -200,7 +219,7 @@ const MapWithTopoMap = () => {
 
         {/* Marker per ogni trail */}
         {trails.map((trail) => ( 
-          <Marker key={trail.id} coordinate={trail.startpoint} flat={true}  onPress={() => handleMarkerPress(trail.id)} >
+          <Marker key={trail.id} coordinate={trail.startpoint} flat={true}  onPress={() => handleMarkerPress(trail)} >
             <View style={styles.markerBike}>
               <MaterialCommunityIcons name="bike" size={24} color="white" />
             </View>
@@ -216,9 +235,8 @@ const MapWithTopoMap = () => {
           </View>
         </Marker>
         }
-
       </MapView>
-
+      
       <SearchBar mapRef={mapRef} />
       {/* Bottone per terminare il trail */}
       {trailActive && (
@@ -226,8 +244,7 @@ const MapWithTopoMap = () => {
           <Ionicons name="stop" size={24} color="white" />
         </TouchableOpacity>
       )}
-
-
+      
       {/* Modal per inserire la review */}
       <ReviewModal reviewModalVisible={reviewModalVisible} reviewText={reviewText} setReviewText={setReviewText} submitReview={submitReview} />
 
@@ -236,6 +253,8 @@ const MapWithTopoMap = () => {
 
       {!modalVisible && ( <BottomSheet location={location} setRegion={setRegion} />)} 
       
+      {/* Modal per la selezione del trail */}
+      {trailOptionsVisible && visibileOptions && <TrailDropdown visible={visibileOptions}  setVisible={setVisibleOptions} trails={trailOptionsVisible} setTrail={setTrailOptionsVisible} onSelect={fetchTrail} />}
     </View>
   );
 };
@@ -316,11 +335,18 @@ interface PopupProps {
 const Popup: React.FC<PopupProps> = ({ selectedTrail, startTrail, closeModal }: PopupProps & { closeModal: (flag: boolean) => void }) => {
   return(
     <View style={styles.popupContainer}>
-      <View style={styles.popup}>
+      {/* Sfondo cliccabile per chiudere il popup  NON VA PECCATO (MA SI RISOLVE DAI)*/}
+      <Pressable
+        style={styles.modalOverlay}
+        onPress={() => closeModal(true)}
+      />
+
+      {/* Contenuto del popup che non deve chiudersi */}
+      <View style={styles.popup} pointerEvents="box-none">
         <Text style={styles.trailName}>{selectedTrail?.name}</Text>
         <Text>Vuoi iniziare questo trail?</Text>
         <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.button} onPress={() => startTrail()}> 
+          <TouchableOpacity style={styles.button} onPress={() => startTrail()}>
             <Text style={styles.buttonText}>Start</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => closeModal(true)}>
@@ -335,6 +361,15 @@ const Popup: React.FC<PopupProps> = ({ selectedTrail, startTrail, closeModal }: 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Opzionale, per dare uno sfondo trasparente scuro
+    zIndex: 1,
+  },
   markerBike: {
     width: 30,
     height: 30,
