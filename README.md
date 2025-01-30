@@ -48,3 +48,17 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+Elenco di cose da fare:
+--Funzionalità 
+-profilo (collegamenti ad uno storico)
+-albero 
+-tutorial 
+-db
+-crare i dettagli dei percorsi (una pagina a parte)
+
+
+--Grafiche 
+-cambiare le icone 
+-cercare un albero che sia migliore, più umano che ti incoraggi ad interagire (magari animato)
+-rendere coerenti i colori dei pulsanti (cerca una palet su w3school)
